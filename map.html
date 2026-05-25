@@ -1,63 +1,114 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
+<html lang="en">
 
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Map Picker</title>
+
+  <!-- Leaflet CSS -->
   <link
     rel="stylesheet"
-    href="https://unpkg.com/leaflet/dist/leaflet.css"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
 
   <style>
-    #map {
-      height: 500px;
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
     }
+
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+
+    .info-box {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+
+      background: white;
+      padding: 10px 14px;
+      border-radius: 10px;
+
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
   </style>
 </head>
 
 <body>
 
-<div id="map"></div>
+  <div class="info-box">
+    <div>
+      <strong>Latitude:</strong>
+      <span id="lat">-</span>
+    </div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <div>
+      <strong>Longitude:</strong>
+      <span id="lng">-</span>
+    </div>
+  </div>
 
-<script type="module">
+  <div id="map"></div>
 
-import {
-  setAnswerValue
-} from 'https://cdn.skypack.dev/@formsort/custom-question-api';
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-const map = L.map('map').setView([-6.2, 106.8], 10);
+  <script>
 
-L.tileLayer(
-  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  {
-    attribution: '&copy; OpenStreetMap contributors'
-  }
-).addTo(map);
+    // Create map
+    const map = L.map('map').setView([-6.2, 106.8], 10);
 
-let marker;
+    // Add OpenStreetMap tiles
+    L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        attribution: '&copy; OpenStreetMap contributors'
+      }
+    ).addTo(map);
 
-map.on('click', function(e) {
+    let marker;
 
-  const lat = e.latlng.lat;
-  const lng = e.latlng.lng;
+    // When user clicks map
+    map.on('click', function(e) {
 
-  if (marker) {
-    map.removeLayer(marker);
-  }
+      const lat = e.latlng.lat.toFixed(6);
+      const lng = e.latlng.lng.toFixed(6);
 
-  marker = L.marker([lat, lng]).addTo(map);
+      // Remove old marker
+      if (marker) {
+        map.removeLayer(marker);
+      }
 
-  // SEND ANSWER TO FORMSORT
-  setAnswerValue({
-    latitude: lat,
-    longitude: lng
-  });
+      // Add marker
+      marker = L.marker([lat, lng]).addTo(map);
 
-});
+      // Update displayed coordinates
+      document.getElementById('lat').textContent = lat;
+      document.getElementById('lng').textContent = lng;
 
-</script>
+      // Console log
+      console.log("Latitude:", lat);
+      console.log("Longitude:", lng);
+
+      // Send data to parent iframe
+      window.parent.postMessage({
+        latitude: lat,
+        longitude: lng
+      }, "*");
+
+    });
+
+  </script>
 
 </body>
 </html>
