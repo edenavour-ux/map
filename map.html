@@ -3,7 +3,10 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
 
   <title>Map Picker</title>
 
@@ -31,7 +34,6 @@
       width: 100%;
     }
 
-    /* Coordinate info box */
     .info-box {
       position: absolute;
       top: 80px;
@@ -40,7 +42,7 @@
 
       background: white;
       padding: 10px 14px;
-      border-radius: 12px;
+      border-radius: 10px;
 
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 
@@ -48,30 +50,7 @@
       line-height: 1.5;
     }
 
-    /* Current location button */
-    #current-location-btn {
-      position: absolute;
-      top: 80px;
-      right: 10px;
-      z-index: 1000;
-
-      background: white;
-      border: none;
-
-      padding: 12px 14px;
-      border-radius: 12px;
-
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    #current-location-btn:hover {
-      background: #f5f5f5;
-    }
-
-    /* Center searchbox */
+    /* CENTER SEARCHBOX */
     .leaflet-top.leaflet-center {
       position: absolute;
       left: 50%;
@@ -80,18 +59,17 @@
       z-index: 1000;
     }
 
-    /* Always expanded searchbox */
+    /* ALWAYS EXPANDED */
     .leaflet-control-geocoder {
       min-width: 320px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       border-radius: 12px;
       overflow: hidden;
-      border: none;
     }
 
     .leaflet-control-geocoder-form input {
       width: 100%;
-      height: 44px;
+      height: 42px;
       padding: 0 14px;
       font-size: 14px;
       border: none;
@@ -103,7 +81,6 @@
 
 <body>
 
-  <!-- Coordinate display -->
   <div class="info-box">
 
     <div>
@@ -118,13 +95,13 @@
 
   </div>
 
-  <!-- Current location button -->
-  <button id="current-location-btn">
-    📍 Use Current Location
-  </button>
-
-  <!-- Map -->
   <div id="map"></div>
+
+  <!-- Hidden input for Formsort -->
+  <input
+    type="hidden"
+    id="location-answer"
+  />
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -132,10 +109,36 @@
   <!-- Geocoder JS -->
   <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
-  <script>
+  <!-- Formsort API -->
+  <script type="module">
 
+    import {
+      setQuestionSize,
+      setAnswerValue
+    } from 'https://cdn.jsdelivr.net/npm/@formsort/custom-question-api/+esm';
+
+    // -----------------------------
+    // Tell Formsort iframe size
+    // -----------------------------
+    function updateQuestionSize() {
+
+      const width = document.body.offsetWidth;
+      const height = document.body.offsetHeight;
+
+      setQuestionSize(width, height);
+
+    }
+
+    window.addEventListener('load', updateQuestionSize);
+    window.addEventListener('resize', updateQuestionSize);
+
+    // -----------------------------
     // Create map
-    const map = L.map('map').setView([-6.2, 106.8], 10);
+    // -----------------------------
+    const map = L.map('map').setView(
+      [-6.2, 106.8],
+      10
+    );
 
     // OpenStreetMap tiles
     L.tileLayer(
@@ -145,7 +148,9 @@
       }
     ).addTo(map);
 
-    // Create center container
+    // -----------------------------
+    // Searchbox container
+    // -----------------------------
     const centerContainer = L.DomUtil.create(
       'div',
       'leaflet-top leaflet-center'
@@ -153,11 +158,13 @@
 
     document.body.appendChild(centerContainer);
 
-    // Add geocoder search
+    // -----------------------------
+    // Geocoder
+    // -----------------------------
     const geocoder = L.Control.geocoder({
       defaultMarkGeocode: false,
       collapsed: false,
-      placeholder: "Search location..."
+      placeholder: "Search location...",
     })
     .on('markgeocode', function(e) {
 
@@ -165,7 +172,10 @@
 
       map.setView(center, 15);
 
-      updateLocation(center.lat, center.lng);
+      updateLocation(
+        center.lat,
+        center.lng
+      );
 
     });
 
@@ -178,7 +188,9 @@
 
     let marker;
 
-    // Update location function
+    // -----------------------------
+    // Update location
+    // -----------------------------
     function updateLocation(lat, lng) {
 
       lat = Number(lat).toFixed(6);
@@ -196,74 +208,35 @@
       document.getElementById('lat').textContent = lat;
       document.getElementById('lng').textContent = lng;
 
-      // Send to parent iframe
-      window.parent.postMessage({
+      // -----------------------------
+      // Send answer to Formsort
+      // -----------------------------
+      const answerValue = JSON.stringify({
         latitude: lat,
         longitude: lng
-      }, "*");
+      });
 
-      console.log("Latitude:", lat);
-      console.log("Longitude:", lng);
+      const inputEl = document.getElementById(
+        'location-answer'
+      );
+
+      inputEl.value = answerValue;
+
+      setAnswerValue(answerValue);
+
+      console.log("Formsort value:", answerValue);
 
     }
 
-    // Click map to select location
+    // -----------------------------
+    // Click map
+    // -----------------------------
     map.on('click', function(e) {
 
       updateLocation(
         e.latlng.lat,
         e.latlng.lng
       );
-
-    });
-
-    // Current location button
-    document
-      .getElementById('current-location-btn')
-      .addEventListener('click', () => {
-
-        // Check geolocation support
-        if (!navigator.geolocation) {
-
-          alert("Geolocation is not supported by your browser.");
-          return;
-
-        }
-
-        // Request location
-        navigator.geolocation.getCurrentPosition(
-
-          // SUCCESS
-          function(position) {
-
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-
-            map.setView([lat, lng], 15);
-
-            updateLocation(lat, lng);
-
-          },
-
-          // ERROR
-          function(error) {
-
-            console.error(error);
-
-            alert(
-              "Location error: " + error.message
-            );
-
-          },
-
-          // OPTIONS
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-          }
-
-        );
 
     });
 
