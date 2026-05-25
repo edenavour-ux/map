@@ -13,6 +13,12 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   />
 
+  <!-- Geocoder CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"
+  />
+
   <style>
 
     body {
@@ -27,7 +33,7 @@
 
     .info-box {
       position: absolute;
-      top: 10px;
+      top: 70px;
       left: 10px;
       z-index: 1000;
 
@@ -47,6 +53,7 @@
 <body>
 
   <div class="info-box">
+
     <div>
       <strong>Latitude:</strong>
       <span id="lat">-</span>
@@ -56,6 +63,7 @@
       <strong>Longitude:</strong>
       <span id="lng">-</span>
     </div>
+
   </div>
 
   <div id="map"></div>
@@ -63,12 +71,15 @@
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Geocoder JS -->
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
   <script>
 
     // Create map
     const map = L.map('map').setView([-6.2, 106.8], 10);
 
-    // Add OpenStreetMap tiles
+    // OpenStreetMap tiles
     L.tileLayer(
       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {
@@ -76,13 +87,28 @@
       }
     ).addTo(map);
 
+    // Add search box
+    const geocoder = L.Control.geocoder({
+      defaultMarkGeocode: true
+    })
+    .on('markgeocode', function(e) {
+
+      const center = e.geocode.center;
+
+      map.setView(center, 15);
+
+      updateLocation(center.lat, center.lng);
+
+    })
+    .addTo(map);
+
     let marker;
 
-    // When user clicks map
-    map.on('click', function(e) {
+    // Function to update location
+    function updateLocation(lat, lng) {
 
-      const lat = e.latlng.lat.toFixed(6);
-      const lng = e.latlng.lng.toFixed(6);
+      lat = Number(lat).toFixed(6);
+      lng = Number(lng).toFixed(6);
 
       // Remove old marker
       if (marker) {
@@ -96,15 +122,24 @@
       document.getElementById('lat').textContent = lat;
       document.getElementById('lng').textContent = lng;
 
-      // Console log
-      console.log("Latitude:", lat);
-      console.log("Longitude:", lng);
-
-      // Send data to parent iframe
+      // Send to parent iframe
       window.parent.postMessage({
         latitude: lat,
         longitude: lng
       }, "*");
+
+      console.log("Latitude:", lat);
+      console.log("Longitude:", lng);
+
+    }
+
+    // Click map to select
+    map.on('click', function(e) {
+
+      updateLocation(
+        e.latlng.lat,
+        e.latlng.lng
+      );
 
     });
 
