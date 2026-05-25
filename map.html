@@ -31,6 +31,7 @@
       width: 100%;
     }
 
+    /* Coordinate info box */
     .info-box {
       position: absolute;
       top: 80px;
@@ -39,7 +40,7 @@
 
       background: white;
       padding: 10px 14px;
-      border-radius: 10px;
+      border-radius: 12px;
 
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 
@@ -47,7 +48,30 @@
       line-height: 1.5;
     }
 
-    /* CENTER SEARCHBOX */
+    /* Current location button */
+    #current-location-btn {
+      position: absolute;
+      top: 80px;
+      right: 10px;
+      z-index: 1000;
+
+      background: white;
+      border: none;
+
+      padding: 12px 14px;
+      border-radius: 12px;
+
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #current-location-btn:hover {
+      background: #f5f5f5;
+    }
+
+    /* Center searchbox */
     .leaflet-top.leaflet-center {
       position: absolute;
       left: 50%;
@@ -56,17 +80,18 @@
       z-index: 1000;
     }
 
-    /* ALWAYS EXPANDED */
+    /* Always visible searchbox */
     .leaflet-control-geocoder {
       min-width: 320px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       border-radius: 12px;
       overflow: hidden;
+      border: none;
     }
 
     .leaflet-control-geocoder-form input {
       width: 100%;
-      height: 42px;
+      height: 44px;
       padding: 0 14px;
       font-size: 14px;
       border: none;
@@ -78,6 +103,7 @@
 
 <body>
 
+  <!-- Coordinate display -->
   <div class="info-box">
 
     <div>
@@ -92,6 +118,12 @@
 
   </div>
 
+  <!-- Current location button -->
+  <button id="current-location-btn">
+    📍 Use Current Location
+  </button>
+
+  <!-- Map -->
   <div id="map"></div>
 
   <!-- Leaflet JS -->
@@ -113,7 +145,7 @@
       }
     ).addTo(map);
 
-    // Create custom center-top control container
+    // Create custom center-top container
     const centerContainer = L.DomUtil.create(
       'div',
       'leaflet-top leaflet-center'
@@ -121,11 +153,11 @@
 
     document.body.appendChild(centerContainer);
 
-    // Add searchbox
+    // Add geocoder search
     const geocoder = L.Control.geocoder({
       defaultMarkGeocode: false,
       collapsed: false,
-      placeholder: "Search location...",
+      placeholder: "Search location..."
     })
     .on('markgeocode', function(e) {
 
@@ -164,7 +196,7 @@
       document.getElementById('lat').textContent = lat;
       document.getElementById('lng').textContent = lng;
 
-      // Send to parent iframe
+      // Send data to parent iframe
       window.parent.postMessage({
         latitude: lat,
         longitude: lng
@@ -175,13 +207,50 @@
 
     }
 
-    // Click map
+    // Click map to select location
     map.on('click', function(e) {
 
       updateLocation(
         e.latlng.lat,
         e.latlng.lng
       );
+
+    });
+
+    // Current location button
+    document
+      .getElementById('current-location-btn')
+      .addEventListener('click', () => {
+
+        if (!navigator.geolocation) {
+
+          alert("Geolocation is not supported.");
+          return;
+
+        }
+
+        navigator.geolocation.getCurrentPosition(
+
+          function(position) {
+
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            map.setView([lat, lng], 15);
+
+            updateLocation(lat, lng);
+
+          },
+
+          function(error) {
+
+            alert("Unable to get current location.");
+
+            console.error(error);
+
+          }
+
+        );
 
     });
 
